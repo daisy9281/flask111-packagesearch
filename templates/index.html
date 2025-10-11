@@ -1905,7 +1905,7 @@
                     copyText += `${packageName}:^${packageVersion}\n`;
                 } else {
                     // NPM.js 格式: "包名": "版本号"
-                    copyText += `"${packageName}": "${packageVersion}"\n`;
+                    copyText += `"${packageName}": "^${packageVersion}"\n`;
                 }
             });
             
