@@ -33,6 +33,11 @@
             --npm-color: #ef4444;
             --npm-hover: #dc2626;
             --npm-bg: #fef2f2;
+            
+            /* 其他标签特定颜色 */
+            --other-color: #10b981;
+            --other-hover: #059669;
+            --other-bg: #ecfdf5;
         }
 
         * {
@@ -144,6 +149,10 @@
         
         .platform-switch-btn.npm.active {
             color: var(--npm-color);
+        }
+        
+        .platform-switch-btn.other.active {
+            color: var(--other-color);
         }
         
         /* 一键清空按钮样式 */
@@ -682,6 +691,55 @@
         
         .npm-platform-btn:hover {
             background-color: var(--npm-hover);
+        }
+        
+        /* 其他标签样式 */
+        .other-links-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+            padding: 20px 0;
+        }
+        
+        .link-card {
+            background: white;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-sm);
+            padding: 20px;
+            transition: var(--transition);
+            border-left: 4px solid var(--other-color);
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+        
+        .link-card:hover {
+            box-shadow: var(--shadow-md);
+            transform: translateY(-2px);
+            border-left-color: var(--other-hover);
+        }
+        
+        .link-card h3 {
+            color: var(--other-color);
+            margin-bottom: 8px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .link-card p {
+            color: var(--text-secondary);
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 12px;
+        }
+        
+        .link-card .url {
+            color: var(--primary-color);
+            font-size: 13px;
+            word-break: break-all;
+            font-family: 'Courier New', monospace;
         }
         
         /* 搜索历史分组样式 */
@@ -1272,8 +1330,16 @@
             });
             
             // 显示对应平台的内容和结果
-            document.getElementById(`${platform}-content`).classList.add('active');
-            document.getElementById(`${platform}-results`).classList.add('active');
+            if (platform === 'other') {
+                document.getElementById('other-content').classList.add('active');
+                // 隐藏搜索历史
+                document.querySelector('.history-section').style.display = 'none';
+            } else {
+                document.getElementById(`${platform}-content`).classList.add('active');
+                document.getElementById(`${platform}-results`).classList.add('active');
+                // 显示搜索历史
+                document.querySelector('.history-section').style.display = 'block';
+            }
         }
         
         // 产品快速搜索功能
@@ -1608,6 +1674,9 @@
                 <button class="platform-switch-btn npm" onclick="switchPlatform('npm')">
                     npm.js
                 </button>
+                <button class="platform-switch-btn other" onclick="switchPlatform('other')">
+                    其他标签
+                </button>
             </div>
 
         </div>
@@ -1776,6 +1845,35 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 其他标签内容区域 -->
+        <div id="other-content" class="toggle-content">
+            <div class="card">
+                <div class="tab-header">
+                    <h2>常用网站链接</h2>
+                </div>
+                <div class="other-links-container">
+                    <a href="https://github.com/CocoaPods/Specs/tree/master/Specs/8/8/b/ZegoUIKitPrebuiltCall" target="_blank" class="link-card">
+                        <h3><i class="fab fa-apple"></i> iOS CallKit 查询版本</h3>
+                        <p>CocoaPods Specs 仓库 - 查询 iOS CallKit 相关包的版本信息</p>
+                        <div class="url">https://github.com/CocoaPods/Specs/tree/master/Specs/8/8/b/ZegoUIKitPrebuiltCall</div>
+                    </a>
+                    
+                    <a href="https://pub.dev" target="_blank" class="link-card">
+                        <h3><i class="fab fa-dart"></i> Pub.dev 官网</h3>
+                        <p>Flutter 和 Dart 包的官方仓库</p>
+                        <div class="url">https://pub.dev</div>
+                    </a>
+                    
+                    <a href="https://www.npmjs.com" target="_blank" class="link-card">
+                        <h3><i class="fab fa-npm"></i> NPM 官网</h3>
+                        <p>JavaScript 和 Node.js 包的官方仓库</p>
+                        <div class="url">https://www.npmjs.com</div>
+                    </a>
+        
                 </div>
             </div>
         </div>
