@@ -155,6 +155,10 @@
             color: var(--other-color);
         }
         
+        .platform-switch-btn.timezone.active {
+            color: var(--warning-color);
+        }
+        
         /* 一键清空按钮样式 */
         .clear-all-btn {
             padding: 14px 32px;
@@ -1334,6 +1338,10 @@
                 document.getElementById('other-content').classList.add('active');
                 // 隐藏搜索历史
                 document.querySelector('.history-section').style.display = 'none';
+            } else if (platform === 'timezone') {
+                document.getElementById('timezone-content').classList.add('active');
+                // 隐藏搜索历史
+                document.querySelector('.history-section').style.display = 'none';
             } else {
                 document.getElementById(`${platform}-content`).classList.add('active');
                 document.getElementById(`${platform}-results`).classList.add('active');
@@ -1654,6 +1662,196 @@
                     searchInput.focus();
                 });
             });
+            
+            // 时区转换器功能
+            const countryButtons = document.querySelectorAll('.country-btn');
+            countryButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    countryButtons.forEach(btn => {
+                        btn.classList.remove('active');
+                        btn.style.backgroundColor = 'white';
+                        btn.style.color = 'var(--text-color)';
+                    });
+                    this.classList.add('active');
+                    this.style.backgroundColor = 'var(--warning-color)';
+                    this.style.color = 'white';
+                    
+                    // 切换国家后自动转换
+                    convertTimezone();
+                });
+            });
+            
+            function convertTimezone() {
+                const time1Input = document.getElementById('time1-input');
+                const selectedTime1CountryBtn = document.querySelector('.time1-country-btn.active');
+                const selectedCountryBtn = document.querySelector('.country-btn.active');
+                const time2Result = document.getElementById('time2-result');
+                
+                const time1Value = time1Input.value.trim();
+                if (!time1Value) {
+                    time2Result.textContent = '请输入时间并选择国家';
+                    return;
+                }
+                
+                if (!selectedTime1CountryBtn) {
+                    time2Result.textContent = '请选择时间1的国家';
+                    return;
+                }
+                
+                if (!selectedCountryBtn) {
+                    time2Result.textContent = '请选择要换算的国家';
+                    return;
+                }
+                
+                const time1Timezone = selectedTime1CountryBtn.getAttribute('data-timezone');
+                const time2Timezone = selectedCountryBtn.getAttribute('data-timezone');
+                
+                try {
+                    // 解析输入的时间，处理各种格式
+                    let date = parseTimeString(time1Value);
+                    if (isNaN(date.getTime())) {
+                        throw new Error('无效的时间格式');
+                    }
+                    
+                    const time1Offset = getTimezoneOffset(time1Timezone);
+                    const time2Offset = getTimezoneOffset(time2Timezone);
+                    
+                    const offsetDiff = time2Offset - time1Offset;
+                    const convertedDate = new Date(date.getTime() + offsetDiff * 60 * 1000);
+                    
+                    // 根据目标时区获取语言代码
+                    const languageCode = getLanguageCode(time2Timezone);
+                    
+                    const options = { 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit', 
+                        hour: '2-digit', 
+                        minute: '2-digit', 
+                        second: '2-digit',
+                        timeZoneName: 'short'
+                    };
+                    
+                    time2Result.textContent = convertedDate.toLocaleString('zh-CN', options);
+                } catch (error) {
+                    time2Result.textContent = '转换失败: ' + error.message;
+                }
+            }
+            
+            // 解析时间字符串，处理各种格式
+            function parseTimeString(timeStr) {
+                // 去除括号和大括号
+                let cleanedStr = timeStr.replace(/[{}\[\]]/g, '').trim();
+                
+                // 处理带有[6]这样的后缀
+                cleanedStr = cleanedStr.replace(/\[\d+\]$/, '').trim();
+                
+                // 处理毫秒部分
+                cleanedStr = cleanedStr.replace(/\.\d+/, '');
+                
+                // 处理不同格式
+                const patterns = [
+                    // 格式1: 12/03/2026 00:51:09 (日月年 时间)
+                    { regex: /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})$/, format: 'DMY' },
+                    // 格式2: 0312 00:51:09 (月日 时间)
+                    { regex: /^(\d{2})(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/, format: 'MD' }
+                ];
+                
+                for (const pattern of patterns) {
+                    const match = cleanedStr.match(pattern.regex);
+                    if (match) {
+                        if (pattern.format === 'DMY') {
+                            // 日月年格式
+                            const day = match[1];
+                            const month = match[2];
+                            const year = match[3];
+                            const hour = match[4];
+                            const minute = match[5];
+                            const second = match[6];
+                            return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+                        } else if (pattern.format === 'MD') {
+                            // 月日格式，默认使用当前年份
+                            const month = match[1];
+                            const day = match[2];
+                            const hour = match[3];
+                            const minute = match[4];
+                            const second = match[5];
+                            const year = new Date().getFullYear();
+                            return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+                        }
+                    }
+                }
+                
+                // 如果没有匹配到特定格式，尝试使用默认解析
+                return new Date(cleanedStr);
+            }
+            
+            function getTimezoneOffset(timezone) {
+                const timezoneOffsets = {
+                    'Asia/Kolkata': 330,     // IST: UTC+5:30
+                    'Asia/Shanghai': 480,    // CST: UTC+8
+                    'America/New_York': -300, // EST: UTC-5
+                    'America/Los_Angeles': -480, // PST: UTC-8
+                    'Europe/London': 0,      // GMT: UTC+0
+                    'Europe/Paris': 60,      // CET: UTC+1
+                    'Australia/Sydney': 600, // AEST: UTC+10
+                    'Asia/Tokyo': 540,       // JST: UTC+9
+                    'Asia/Manila': 480,      // PST: UTC+8 (Philippine Standard Time)
+                    'Asia/Riyadh': 180,      // AST: UTC+3
+                    'America/Sao_Paulo': -180, // BRT: UTC-3
+                    'Europe/Moscow': 180     // MSK: UTC+3
+                };
+                
+                return timezoneOffsets[timezone] || 0;
+            }
+            
+            // 获取时区对应的语言代码
+            function getLanguageCode(timezone) {
+                const languageCodes = {
+                    'Asia/Kolkata': 'hi-IN',      // 印度语-印度
+                    'Asia/Shanghai': 'zh-CN',     // 中文-中国
+                    'America/New_York': 'en-US',  // 英语-美国
+                    'America/Los_Angeles': 'en-US', // 英语-美国
+                    'Europe/London': 'en-GB',     // 英语-英国
+                    'Europe/Paris': 'fr-FR',      // 法语-法国
+                    'Australia/Sydney': 'en-AU',  // 英语-澳大利亚
+                    'Asia/Tokyo': 'ja-JP',        // 日语-日本
+                    'Asia/Manila': 'fil-PH',      // 菲律宾语-菲律宾
+                    'Asia/Riyadh': 'ar-SA',       // 阿拉伯语-沙特阿拉伯
+                    'America/Sao_Paulo': 'pt-BR',  // 葡萄牙语-巴西
+                    'Europe/Moscow': 'ru-RU'      // 俄语-俄罗斯
+                };
+                
+                return languageCodes[timezone] || 'en-US';
+            }
+            
+            const time1Input = document.getElementById('time1-input');
+            if (time1Input) {
+                time1Input.addEventListener('keypress', function(e) {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        convertTimezone();
+                    }
+                });
+                
+                time1Input.addEventListener('input', convertTimezone);
+            }
+            
+            const time1CountryButtons = document.querySelectorAll('.time1-country-btn');
+            time1CountryButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    time1CountryButtons.forEach(btn => {
+                        btn.classList.remove('active');
+                        btn.style.backgroundColor = 'white';
+                        btn.style.color = 'var(--text-color)';
+                    });
+                    this.classList.add('active');
+                    this.style.backgroundColor = 'var(--primary-color)';
+                    this.style.color = 'white';
+                    
+                    convertTimezone();
+                });
+            });
         });
     </script>
 </head>
@@ -1673,6 +1871,9 @@
                 </button>
                 <button class="platform-switch-btn npm" onclick="switchPlatform('npm')">
                     npm.js
+                </button>
+                <button class="platform-switch-btn timezone" onclick="switchPlatform('timezone')">
+                    时区转换
                 </button>
                 <button class="platform-switch-btn other" onclick="switchPlatform('other')">
                     其他标签
@@ -1845,6 +2046,81 @@
                             </div>
                         </div>
                     </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 时区转换器内容区域 -->
+        <div id="timezone-content" class="toggle-content">
+            <div class="card">
+                <div class="tab-header">
+                    <h2>时区转换器</h2>
+                </div>
+                <div style="padding: 20px;">
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">输入时间 1:</label>
+                        <input type="text" id="time1-input" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: var(--border-radius); font-size: 16px;" placeholder="请粘贴输入任意格式的时间">
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">时间 1 来自的国家:</label>
+                        <div class="time1-country-buttons" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <button type="button" class="time1-country-btn active" data-timezone="Asia/Kolkata" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: var(--primary-color); color: white; font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">印度 (IST)</button>
+                            <button type="button" class="time1-country-btn" data-timezone="Asia/Shanghai" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">中国 (CST)</button>
+                            <button type="button" class="time1-country-btn" data-timezone="America/New_York" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">美国东部 (EST)</button>
+                            <button type="button" class="time1-country-btn" data-timezone="America/Los_Angeles" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">美国西部 (PST)</button>
+                            <button type="button" class="time1-country-btn" data-timezone="Europe/London" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">英国 (GMT)</button>
+                            <button type="button" class="time1-country-btn" data-timezone="Europe/Paris" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">法国 (CET)</button>
+                            <button type="button" class="time1-country-btn" data-timezone="Australia/Sydney" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">澳大利亚 (AEST)</button>
+                            <button type="button" class="time1-country-btn" data-timezone="Asia/Tokyo" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">日本 (JST)</button>
+                            <button type="button" class="time1-country-btn" data-timezone="Asia/Manila" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">菲律宾 (PST)</button>
+                            <button type="button" class="time1-country-btn" data-timezone="Asia/Riyadh" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">沙特阿拉伯 (AST)</button>
+                            <button type="button" class="time1-country-btn" data-timezone="America/Sao_Paulo" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">巴西 (BRT)</button>
+                            <button type="button" class="time1-country-btn" data-timezone="Europe/Moscow" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">俄罗斯 (MSK)</button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">要换算的国家:</label>
+                        <div class="country-buttons" style="display: flex; flex-wrap: wrap; gap: 10px;">
+                            <button type="button" class="country-btn active" data-timezone="Asia/Shanghai" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: var(--warning-color); color: white; font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">中国 (CST)</button>
+                            <button type="button" class="country-btn" data-timezone="Asia/Kolkata" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">印度 (IST)</button>
+                            <button type="button" class="country-btn" data-timezone="America/New_York" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">美国东部 (EST)</button>
+                            <button type="button" class="country-btn" data-timezone="America/Los_Angeles" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">美国西部 (PST)</button>
+                            <button type="button" class="country-btn" data-timezone="Europe/London" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">英国 (GMT)</button>
+                            <button type="button" class="country-btn" data-timezone="Europe/Paris" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">法国 (CET)</button>
+                            <button type="button" class="country-btn" data-timezone="Australia/Sydney" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">澳大利亚 (AEST)</button>
+                            <button type="button" class="country-btn" data-timezone="Asia/Tokyo" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">日本 (JST)</button>
+                            <button type="button" class="country-btn" data-timezone="Asia/Manila" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">菲律宾 (PST)</button>
+                            <button type="button" class="country-btn" data-timezone="Asia/Riyadh" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">沙特阿拉伯 (AST)</button>
+                            <button type="button" class="country-btn" data-timezone="America/Sao_Paulo" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">巴西 (BRT)</button>
+                            <button type="button" class="country-btn" data-timezone="Europe/Moscow" style="padding: 10px 20px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: white; color: var(--text-color); font-size: 14px; font-weight: 600; cursor: pointer; transition: var(--transition);">俄罗斯 (MSK)</button>
+                        </div>
+                    </div>
+                    
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">时间 2:</label>
+                        <div id="time2-result" style="padding: 12px; border: 2px solid var(--border-color); border-radius: var(--border-radius); background-color: #f3f4f6; font-size: 16px; min-height: 48px; display: flex; align-items: center;">请输入时间并选择国家</div>
+                    </div>
+                </div>
+                
+                <!-- 时区信息提示 -->
+                <div style="margin-top: 20px; padding: 15px; border-top: 1px solid var(--border-color); font-size: 14px; color: #666;">
+                    <h4 style="margin-bottom: 10px; color: var(--text-color);">时区信息参考：</h4>
+                    <ul style="list-style: none; padding: 0; margin: 0;">
+                        <li>印度 加尔各答 时区UTC+5:30 比中国慢2.5h</li>
+                        <li>中国 上海 时区UTC+8 与中国无时差</li>
+                        <li>美国 纽约 时区UTC-5 比中国慢13h</li>
+                        <li>美国 洛杉矶 时区UTC-8 比中国慢16h</li>
+                        <li>英国 伦敦 时区UTC+0 比中国慢8h</li>
+                        <li>法国 巴黎 时区UTC+1 比中国慢7h</li>
+                        <li>澳大利亚 悉尼 时区UTC+10 比中国快2h</li>
+                        <li>日本 东京 时区UTC+9 比中国快1h</li>
+                        <li>菲律宾 马尼拉 时区UTC+8 与中国无时差</li>
+                        <li>沙特阿拉伯 利雅得 时区UTC+3 比中国慢5h</li>
+                        <li>巴西 圣保罗 时区UTC-3 比中国慢11h</li>
+                        <li>俄罗斯 莫斯科 时区UTC+3 比中国慢5h</li>
+                    </ul>
                 </div>
             </div>
         </div>
