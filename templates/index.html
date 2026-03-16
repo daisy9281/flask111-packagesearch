@@ -1754,7 +1754,11 @@
                     // 格式1: 12/03/2026 00:51:09 (日月年 时间)
                     { regex: /^(\d{2})\/(\d{2})\/(\d{4})\s+(\d{2}):(\d{2}):(\d{2})$/, format: 'DMY' },
                     // 格式2: 0312 00:51:09 (月日 时间)
-                    { regex: /^(\d{2})(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/, format: 'MD' }
+                    { regex: /^(\d{2})(\d{2})\s+(\d{2}):(\d{2}):(\d{2})$/, format: 'MD' },
+                    // 格式3: 11:43:09 (时分秒)
+                    { regex: /^(\d{2}):(\d{2}):(\d{2})$/, format: 'HMS' },
+                    // 格式4: 11:42 (时分)
+                    { regex: /^(\d{2}):(\d{2})$/, format: 'HM' }
                 ];
                 
                 for (const pattern of patterns) {
@@ -1778,6 +1782,25 @@
                             const second = match[5];
                             const year = new Date().getFullYear();
                             return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+                        } else if (pattern.format === 'HMS') {
+                            // 时分秒格式，默认使用当前日期
+                            const hour = match[1];
+                            const minute = match[2];
+                            const second = match[3];
+                            const now = new Date();
+                            const year = now.getFullYear();
+                            const month = String(now.getMonth() + 1).padStart(2, '0');
+                            const day = String(now.getDate()).padStart(2, '0');
+                            return new Date(`${year}-${month}-${day}T${hour}:${minute}:${second}`);
+                        } else if (pattern.format === 'HM') {
+                            // 时分格式，默认使用当前日期和0秒
+                            const hour = match[1];
+                            const minute = match[2];
+                            const now = new Date();
+                            const year = now.getFullYear();
+                            const month = String(now.getMonth() + 1).padStart(2, '0');
+                            const day = String(now.getDate()).padStart(2, '0');
+                            return new Date(`${year}-${month}-${day}T${hour}:${minute}:00`);
                         }
                     }
                 }
@@ -2060,6 +2083,9 @@
                     <div style="margin-bottom: 20px;">
                         <label style="display: block; margin-bottom: 8px; font-weight: 600;">输入时间 1:</label>
                         <input type="text" id="time1-input" style="width: 100%; padding: 12px; border: 2px solid var(--border-color); border-radius: var(--border-radius); font-size: 16px;" placeholder="请粘贴输入任意格式的时间">
+                        <div style="margin-top: 5px; font-size: 12px; color: #666;">
+                            支持格式示例：12/03/2026 00:51:09、[0819 12:20:09.508]、11:43:09、11:42 可以出现英文下的{}[]
+                        </div>
                     </div>
                     
                     <div style="margin-bottom: 20px;">
