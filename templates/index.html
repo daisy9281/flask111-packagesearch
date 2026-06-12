@@ -18,6 +18,7 @@
             --success-color: #10b981;
             --warning-color: #f59e0b;
             --error-color: #ef4444;
+            --info-color: #8b5cf6;
             --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
             --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
             --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -157,6 +158,10 @@
         
         .platform-switch-btn.timezone.active {
             color: var(--warning-color);
+        }
+        
+        .platform-switch-btn.cdn.active {
+            color: var(--info-color);
         }
         
         /* 一键清空按钮样式 */
@@ -1342,6 +1347,10 @@
                 document.getElementById('timezone-content').classList.add('active');
                 // 隐藏搜索历史
                 document.querySelector('.history-section').style.display = 'none';
+            } else if (platform === 'cdn') {
+                document.getElementById('cdn-content').classList.add('active');
+                // 隐藏搜索历史
+                document.querySelector('.history-section').style.display = 'none';
             } else {
                 document.getElementById(`${platform}-content`).classList.add('active');
                 document.getElementById(`${platform}-results`).classList.add('active');
@@ -1875,6 +1884,30 @@
                     convertTimezone();
                 });
             });
+            
+            // 复制按钮功能
+            document.querySelectorAll('.copy-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const targetId = this.getAttribute('data-target');
+                    const targetElement = document.getElementById(targetId);
+                    if (targetElement) {
+                        const text = targetElement.textContent;
+                        if (text && text !== '-') {
+                            navigator.clipboard.writeText(text).then(() => {
+                                const originalText = this.textContent;
+                                this.textContent = '已复制!';
+                                this.style.backgroundColor = 'var(--success-color)';
+                                setTimeout(() => {
+                                    this.textContent = originalText;
+                                    this.style.backgroundColor = 'var(--primary-color)';
+                                }, 2000);
+                            }).catch(err => {
+                                console.error('复制失败:', err);
+                            });
+                        }
+                    }
+                });
+            });
         });
     </script>
 </head>
@@ -1897,6 +1930,9 @@
                 </button>
                 <button class="platform-switch-btn timezone" onclick="switchPlatform('timezone')">
                     时区转换
+                </button>
+                <button class="platform-switch-btn cdn" onclick="switchPlatform('cdn')">
+                    计算器
                 </button>
                 <button class="platform-switch-btn other" onclick="switchPlatform('other')">
                     其他标签
@@ -2149,6 +2185,11 @@
                     </ul>
                 </div>
             </div>
+        </div>
+        
+        <!-- CDN密钥计算器内容区域 -->
+        <div id="cdn-content" class="toggle-content">
+            <iframe src="/cdn-calculator" style="width: 100%; min-height: 700px; border: none;"></iframe>
         </div>
         
         <!-- 其他标签内容区域 -->

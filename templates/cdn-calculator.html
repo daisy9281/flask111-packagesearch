@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CDN密钥计算器</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #3b82f6;
+            --primary-hover: #2563eb;
+            --secondary-color: #6366f1;
+            --text-color: #374151;
+            --text-secondary: #6b7280;
+            --background-color: #f9fafb;
+            --card-background: #ffffff;
+            --border-color: #e5e7eb;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --error-color: #ef4444;
+            --info-color: #8b5cf6;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --border-radius: 8px;
+            --transition: all 0.2s ease-in-out;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 0;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .card {
+            background: var(--card-background);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+            transition: var(--transition);
+        }
+
+        .card:hover {
+            box-shadow: var(--shadow-lg);
+        }
+
+        .card-header {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            padding: 20px 24px;
+        }
+
+        .card-header h2 {
+            margin: 0;
+            font-size: 20px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .card-body {
+            display: flex;
+            gap: 24px;
+            padding: 24px;
+        }
+
+        .input-section, .output-section {
+            flex: 1;
+            min-width: 0;
+        }
+
+        .input-section {
+            padding-right: 12px;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .output-section {
+            padding-left: 12px;
+        }
+
+        .section-title {
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-color);
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 14px;
+            transition: var(--transition);
+            background-color: var(--card-background);
+            color: var(--text-color);
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
+        .form-group input::placeholder {
+            color: var(--text-secondary);
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .btn {
+            flex: 1;
+            padding: 14px 24px;
+            border: none;
+            border-radius: var(--border-radius);
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+            color: white;
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-secondary {
+            background: #f3f4f6;
+            color: var(--text-color);
+        }
+
+        .btn-secondary:hover {
+            background: #e5e7eb;
+        }
+
+        .result-section {
+            background: var(--background-color);
+            border-radius: var(--border-radius);
+            padding: 16px;
+            margin-bottom: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .result-section:last-child {
+            margin-bottom: 0;
+        }
+
+        .result-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 4px;
+            font-weight: 500;
+        }
+
+        .result-value {
+            font-family: 'Monaco', 'Menlo', 'Consolas', monospace;
+            font-size: 14px;
+            color: var(--text-color);
+            word-break: break-all;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .copy-btn {
+            padding: 6px 14px;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+
+        .copy-btn:hover {
+            background: var(--primary-hover);
+        }
+
+        .copy-btn.copied {
+            background: var(--success-color);
+        }
+
+        .footer-note {
+            margin-top: 16px;
+            font-size: 12px;
+            color: var(--text-secondary);
+            background-color: #fef3c7;
+            padding: 12px 16px;
+            border-radius: var(--border-radius);
+        }
+
+        .footer-note strong {
+            color: var(--warning-color);
+        }
+
+        .footer-note p {
+            margin: 4px 0;
+        }
+
+        @media (max-width: 768px) {
+            .card-body {
+                flex-direction: column;
+            }
+            
+            .input-section {
+                padding-right: 0;
+                border-right: none;
+                border-bottom: 1px solid var(--border-color);
+                padding-bottom: 24px;
+                margin-bottom: 8px;
+            }
+            
+            .output-section {
+                padding-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <div class="card-header">
+                <h2><i class="fas fa-key"></i> CDN密钥计算器</h2>
+            </div>
+            
+            <div class="card-body">
+                <div class="input-section">
+                    <div class="section-title"><i class="fas fa-pencil-alt"></i> 输入参数</div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-link"></i> 推流URL地址</label>
+                        <input type="text" id="push-url" placeholder="例如: rtmp://push-ws1.zego.im/live/123">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-lock"></i> 密钥(KEY)</label>
+                        <input type="text" id="cdn-key" placeholder="例如: KEY123">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label><i class="fas fa-clock"></i> 有效期时间</label>
+                        <input type="datetime-local" id="expiry-time" step="1">
+                    </div>
+                    
+                    <div class="btn-group">
+                        <button class="btn btn-primary" onclick="calculateCdnUrl()"><i class="fas fa-magic"></i> 生成URL</button>
+                        <button class="btn btn-secondary" onclick="resetForm()"><i class="fas fa-refresh"></i> 重置</button>
+                    </div>
+                    
+                    <div class="footer-note">
+                        <strong><i class="fas fa-info-circle"></i> 计算规则：</strong>
+                        <p>wsSecret = MD5(wsABStime + StreamName + KEY)</p>
+                        <p>其中：StreamName 格式为 "/接入点/流ID"</p>
+                    </div>
+                </div>
+                
+                <div class="output-section">
+                    <div class="section-title"><i class="fas fa-output"></i> 计算结果</div>
+                    
+                    <div class="result-section">
+                        <div class="result-label">wsABStime (Unix时间戳)</div>
+                        <div class="result-value" id="wsabstime-timestamp">-</div>
+                    </div>
+                    
+                    <div class="result-section">
+                        <div class="result-label">wsABStime (十六进制)</div>
+                        <div class="result-value" id="wsabstime-hex">-</div>
+                    </div>
+                    
+                    <div class="result-section">
+                        <div class="result-label">wsSecret</div>
+                        <div class="result-value">
+                            <span id="wssecret">-</span>
+                            <button class="copy-btn" data-target="wssecret"><i class="fas fa-copy"></i> 复制</button>
+                        </div>
+                    </div>
+                    
+                    <div class="result-section">
+                        <div class="result-label">最终URL</div>
+                        <div class="result-value">
+                            <span id="final-url">-</span>
+                            <button class="copy-btn" data-target="final-url"><i class="fas fa-copy"></i> 复制</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/js-md5@0.7.3/src/md5.min.js"></script>
+    <script>
+        function calculateCdnUrl() {
+            const pushUrl = document.getElementById('push-url').value.trim();
+            const key = document.getElementById('cdn-key').value.trim();
+            const expiryTime = document.getElementById('expiry-time').value;
+            
+            if (!pushUrl) {
+                alert('请输入推流URL地址');
+                return;
+            }
+            
+            if (!key) {
+                alert('请输入密钥');
+                return;
+            }
+            
+            if (!expiryTime) {
+                alert('请选择有效期时间');
+                return;
+            }
+            
+            try {
+                const urlMatch = pushUrl.match(/rtmp:\/\/[^\/]+\/(.+)/);
+                if (!urlMatch) {
+                    alert('推流URL格式不正确，请检查格式');
+                    return;
+                }
+                
+                const streamName = '/' + urlMatch[1];
+                const expiryDate = new Date(expiryTime);
+                const timestamp = Math.floor(expiryDate.getTime() / 1000);
+                if (isNaN(timestamp)) {
+                    alert('时间解析失败，请检查时间格式');
+                    return;
+                }
+                const hexTime = timestamp.toString(16).toUpperCase();
+                const secretString = hexTime + streamName + key;
+                
+                console.log('===== CDN密钥计算日志 =====');
+                console.log('推流URL:', pushUrl);
+                console.log('密钥:', key);
+                console.log('有效期时间:', expiryTime);
+                console.log('提取的StreamName:', streamName);
+                console.log('Unix时间戳:', timestamp);
+                console.log('十六进制时间(大写):', hexTime);
+                console.log('拼接字符串:', secretString);
+                
+                const wsSecret = md5(secretString);
+                
+                console.log('MD5结果:', wsSecret);
+                console.log('最终URL:', pushUrl + '?wsSecret=' + wsSecret + '&wsABStime=' + hexTime);
+                console.log('=============================');
+                
+                const finalUrl = pushUrl + '?wsSecret=' + wsSecret + '&wsABStime=' + hexTime;
+                
+                document.getElementById('wsabstime-timestamp').textContent = timestamp.toString();
+                document.getElementById('wsabstime-hex').textContent = hexTime;
+                document.getElementById('wssecret').textContent = wsSecret;
+                document.getElementById('final-url').textContent = finalUrl;
+            } catch (error) {
+                alert('计算失败: ' + error.message);
+            }
+        }
+        
+        function resetForm() {
+            document.getElementById('push-url').value = '';
+            document.getElementById('cdn-key').value = '';
+            document.getElementById('expiry-time').value = '';
+            document.getElementById('wsabstime-timestamp').textContent = '-';
+            document.getElementById('wsabstime-hex').textContent = '-';
+            document.getElementById('wssecret').textContent = '-';
+            document.getElementById('final-url').textContent = '-';
+        }
+        
+        document.querySelectorAll('.copy-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const targetId = this.getAttribute('data-target');
+                const targetElement = document.getElementById(targetId);
+                if (targetElement) {
+                    const text = targetElement.textContent;
+                    if (text && text !== '-') {
+                        navigator.clipboard.writeText(text).then(() => {
+                            const originalText = this.innerHTML;
+                            this.innerHTML = '<i class="fas fa-check"></i> 已复制';
+                            this.classList.add('copied');
+                            setTimeout(() => {
+                                this.innerHTML = '<i class="fas fa-copy"></i> 复制';
+                                this.classList.remove('copied');
+                            }, 2000);
+                        }).catch(err => {
+                            const textarea = document.createElement('textarea');
+                            textarea.value = text;
+                            textarea.style.position = 'fixed';
+                            textarea.style.left = '-9999px';
+                            document.body.appendChild(textarea);
+                            textarea.select();
+                            try {
+                                document.execCommand('copy');
+                                const originalText = this.innerHTML;
+                                this.innerHTML = '<i class="fas fa-check"></i> 已复制';
+                                this.classList.add('copied');
+                                setTimeout(() => {
+                                    this.innerHTML = '<i class="fas fa-copy"></i> 复制';
+                                    this.classList.remove('copied');
+                                }, 2000);
+                            } catch (e) {
+                                console.error('复制失败:', e);
+                            }
+                            document.body.removeChild(textarea);
+                        });
+                    }
+                }
+            });
+        });
+    </script>
+</body>
+</html>

@@ -87,6 +87,11 @@ def search_npm():
                           npm_exact_match=exact_match,
                           npmjs_data=npmjs_data)
 
+# CDN密钥计算器路由
+@app.route('/cdn-calculator')
+def cdn_calculator():
+    return render_template('cdn-calculator.html')
+
 if __name__ == '__main__':
     # 创建templates目录
     if not os.path.exists('templates'):
